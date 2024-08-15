@@ -1,45 +1,63 @@
-# app/routes/movies.py
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, HTTPException
 from bson import ObjectId
-from typing import List
-from app.models import Movie, User
-from app.schemas.movie import MovieCreate, MovieUpdate, MovieResponse
-from app.deps import get_current_user
-from app.database import db
+from pydantic import BaseModel
+from database import movies_collection
 
 router = APIRouter()
 
-@router.post("/", response_model=MovieResponse)
-async def add_movie(movie_in: MovieCreate, current_user: User = Depends(get_current_user)):
-    movie = Movie(**movie_in.dict(), added_by=current_user.id)
-    await db["movies"].insert_one(movie.dict())
-    return movie
+class Movie(BaseModel):
+    title: str
+    director: str
+    year: int
+    genres: list
+    rating: float
 
-@router.get("/", response_model=List[MovieResponse])
-async def list_movies():
-    movies = await db["movies"].find().to_list(100)
-    return [Movie(**movie) for movie in movies]
+class MovieInDB(Movie):
+    id: str
 
-@router.get("/{movie_id}", response_model=MovieResponse)
+def movie_helper(movie) -> dict:
+    return {
+        "id": str(movie["_id"]),
+        "title": movie["title"],
+        "director": movie["director"],
+        "year": movie["year"],
+        "genres": movie["genres"],
+        "rating": movie["rating"]
+    }
+
+@router.get("/", response_model=list[MovieInDB])
+async def get_movies():
+    movies = await movies_collection.find().to_list(100)
+    return [movie_helper(movie) for movie in movies]
+
+@router.post("/", response_model=MovieInDB, status_code=201)
+async def add_movie(movie: Movie):
+    new_movie = await movies_collection.insert_one(movie.dict())
+    created_movie = await movies_collection.find_one({"_id": new_movie.inserted_id})
+    return movie_helper(created_movie)
+
+@router.get("/{movie_id}", response_model=MovieInDB)
 async def get_movie(movie_id: str):
-    movie = await db["movies"].find_one({"_id": ObjectId(movie_id)})
-    if not movie:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Movie not found")
-    return Movie(**movie)
+    movie = await movies_collection.find_one({"_id": ObjectId(movie_id)})
+    if movie:
+        return movie_helper(movie)
+    raise HTTPException(status_code=404, detail="Movie not found")
 
-@router.put("/{movie_id}", response_model=MovieResponse)
-async def update_movie(movie_id: str, movie_in: MovieUpdate, current_user: User = Depends(get_current_user)):
-    movie = await db["movies"].find_one({"_id": ObjectId(movie_id)})
-    if not movie or movie["added_by"] != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to edit this movie")
-    await db["movies"].update_one({"_id": ObjectId(movie_id)}, {"$set": movie_in.dict(exclude_unset=True)})
-    updated_movie = await db["movies"].find_one({"_id": ObjectId(movie_id)})
-    return Movie(**updated_movie)
+@router.put("/{movie_id}", response_model=MovieInDB)
+async def update_movie(movie_id: str, movie: Movie):
+    updated_movie = await movies_collection.find_one_and_update(
+        {"_id": ObjectId(movie_id)},
+        {"$set": movie.dict()},
+        return_document=True
+    )
+    if updated_movie:
+        return movie_helper(updated_movie)
+    raise HTTPException(status_code=404, detail="Movie not found")
 
-@router.delete("/{movie_id}")
-async def delete_movie(movie_id: str, current_user: User = Depends(get_current_user)):
-    movie = await db["movies"].find_one({"_id": ObjectId(movie_id)})
-    if not movie or movie["added_by"] != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to delete this movie")
-    await db["movies"].delete_one({"_id": ObjectId(movie_id)})
-    return {"detail": "Movie deleted successfully"}
+@router.delete("/{movie_id}", status_code=204)
+async def delete_movie(movie_id: str):
+    delete_result = await movies_collection.delete_one({"_id": ObjectId(movie_id)})
+    if delete_result.deleted_count == 1:
+        return
+    raise HTTPException(status_code=404, detail="Movie not found")

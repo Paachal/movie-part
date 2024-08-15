@@ -1,37 +1,68 @@
-# app/routes/auth.py
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-from datetime import timedelta
-from app.models import User
-from app.schemas.user import UserCreate, UserLogin, UserResponse
-from app.core.security import verify_password, get_password_hash, create_access_token
-from app.database import db
+
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
+from database import db
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
 
 router = APIRouter()
 
-@router.post("/register", response_model=UserResponse)
-async def register(user_in: UserCreate):
-    user = await db["users"].find_one({"username": user_in.username})
-    if user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered",
-        )
-    hashed_password = get_password_hash(user_in.password)
-    user = User(username=user_in.username, hashed_password=hashed_password)
-    await db["users"].insert_one(user.dict())
-    return UserResponse(username=user_in.username)
+SECRET_KEY = "your-secret-key"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-@router.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await db["users"].find_one({"username": form_data.username})
-    if not user or not verify_password(form_data.password, user["hashed_password"]):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect username or password",
-        )
-    access_token_expires = timedelta(minutes=30)
-    access_token = create_access_token(
-        data={"sub": user["username"]}, expires_delta=access_token_expires
-    )
+users_collection = db.get_collection("users")
+
+class User(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: str | None = None
+
+# Utility functions
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_user(username: str):
+    user = await users_collection.find_one({"username": username})
+    if user:
+        return user
+    return None
+
+@router.post("/register", response_model=Token)
+async def register(user: User):
+    hashed_password = get_password_hash(user.password)
+    user_dict = user.dict()
+    user_dict["password"] = hashed_password
+    await users_collection.insert_one(user_dict)
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/login", response_model=Token)
+async def login(user: User):
+    db_user = await get_user(user.username)
+    if not db_user or not verify_password(user.password, db_user["password"]):
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+    access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}

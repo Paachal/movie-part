@@ -1,21 +1,43 @@
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from bson import ObjectId
-from typing import List
-from app.models import Comment, User
-from app.schemas.comment import CommentCreate, CommentResponse
-from app.deps import get_current_user
-from app.database import db
+from database import comments_collection
 
 router = APIRouter()
 
-@router.post("/", response_model=CommentResponse)
-async def add_comment(comment_in: CommentCreate, current_user: User = Depends(get_current_user)):
-    comment = Comment(**comment_in.dict(), user_id=current_user.id)
-    await db["comments"].insert_one(comment.dict())
-    return comment
+class Comment(BaseModel):
+    movie_id: str
+    user_id: str
+    content: str
+    parent_comment_id: str | None = None
 
-@router.get("/{movie_id}", response_model=List[CommentResponse])
+class CommentInDB(Comment):
+    id: str
+
+def comment_helper(comment) -> dict:
+    return {
+        "id": str(comment["_id"]),
+        "movie_id": comment["movie_id"],
+        "user_id": comment["user_id"],
+        "content": comment["content"],
+        "parent_comment_id": comment["parent_comment_id"]
+    }
+
+@router.get("/{movie_id}", response_model=list[CommentInDB])
 async def get_comments(movie_id: str):
-    comments = await db["comments"].find({"movie_id": ObjectId(movie_id)}).to_list(100)
-    return [Comment(**comment) for comment in comments]
+    comments = await comments_collection.find({"movie_id": movie_id}).to_list(100)
+    return [comment_helper(comment) for comment in comments]
+
+@router.post("/", response_model=CommentInDB, status_code=201)
+async def add_comment(comment: Comment):
+    new_comment = await comments_collection.insert_one(comment.dict())
+    created_comment = await comments_collection.find_one({"_id": new_comment.inserted_id})
+    return comment_helper(created_comment)
+
+@router.delete("/{comment_id}", status_code=204)
+async def delete_comment(comment_id: str):
+    delete_result = await comments_collection.delete_one({"_id": ObjectId(comment_id)})
+    if delete_result.deleted_count == 1:
+        return
+    raise HTTPException(status_code=404, detail="Comment not found")

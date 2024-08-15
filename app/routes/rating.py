@@ -1,21 +1,41 @@
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from bson import ObjectId
-from typing import List
-from app.models import Rating, User
-from app.schemas.rating import RatingCreate, RatingResponse
-from app.deps import get_current_user
-from app.database import db
+from database import ratings_collection
 
 router = APIRouter()
 
-@router.post("/", response_model=RatingResponse)
-async def rate_movie(rating_in: RatingCreate, current_user: User = Depends(get_current_user)):
-    rating = Rating(**rating_in.dict(), user_id=current_user.id)
-    await db["ratings"].insert_one(rating.dict())
-    return rating
+class Rating(BaseModel):
+    movie_id: str
+    user_id: str
+    rating: float
 
-@router.get("/{movie_id}", response_model=List[RatingResponse])
-async def get_movie_ratings(movie_id: str):
-    ratings = await db["ratings"].find({"movie_id": ObjectId(movie_id)}).to_list(100)
-    return [Rating(**rating) for rating in ratings]
+class RatingInDB(Rating):
+    id: str
+
+def rating_helper(rating) -> dict:
+    return {
+        "id": str(rating["_id"]),
+        "movie_id": rating["movie_id"],
+        "user_id": rating["user_id"],
+        "rating": rating["rating"]
+    }
+
+@router.get("/{movie_id}", response_model=list[RatingInDB])
+async def get_ratings(movie_id: str):
+    ratings = await ratings_collection.find({"movie_id": movie_id}).to_list(100)
+    return [rating_helper(rating) for rating in ratings]
+
+@router.post("/", response_model=RatingInDB, status_code=201)
+async def add_rating(rating: Rating):
+    new_rating = await ratings_collection.insert_one(rating.dict())
+    created_rating = await ratings_collection.find_one({"_id": new_rating.inserted_id})
+    return rating_helper(created_rating)
+
+@router.delete("/{rating_id}", status_code=204)
+async def delete_rating(rating_id: str):
+    delete_result = await ratings_collection.delete_one({"_id": ObjectId(rating_id)})
+    if delete_result.deleted_count == 1:
+        return
+    raise HTTPException(status_code=404, detail="Rating not found")
