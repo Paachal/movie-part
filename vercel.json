@@ -10,11 +10,6 @@
         "src": "/(.*)",
         "dest": "app/main.py"
       }
-    ],
-    "env": {
-      "APP_MODULE": "main:app",
-      "MONGODB_URI": "mongodb+srv://paschal:.adgjmptwpaschal@cluster0.dx4v8.mongodb.net/movieDB?retryWrites=true&w=majority&appName=Cluster0"
-
-    }
+    ]
   }
   
