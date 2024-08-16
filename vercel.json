@@ -8,11 +8,10 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "main:app"
+      "dest": "/main.py"
     }
   ],
   "env": {
-    "MONGODB_URI": "mongodb+srv://paschal:.adgjmptwpaschal@cluster0.dx4v8.mongodb.net/movieDB?retryWrites=true&w=majority&appName=Cluster0"
-
+      "APP_MODULE": "main:app"
   }
 }
