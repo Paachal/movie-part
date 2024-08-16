@@ -1,5 +1,18 @@
 {
-  "rewrites": [
-    {"source": "/(.*)", "destination": "app/main.py" }
-  ]
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "main:app"
+    }
+  ],
+  "env": {
+    "MONGODB_URI": "mongodb+srv://paschal:.adgjmptwpaschal@cluster0.dx4v8.mongodb.net/movieDB?retryWrites=true&w=majority&appName=Cluster0"
+
+  }
 }
