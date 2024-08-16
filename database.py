@@ -1,13 +1,13 @@
+from pymongo import MongoClient
 
-import os
-from motor.motor_asyncio import AsyncIOMotorClient
+# MongoDB connection string. Replace <username>, <password>, and <cluster-url> with your actual MongoDB credentials and URL.
+client = MongoClient("mongodb+srv://paschal:.adgjmptwpaschal@cluster0.dx4v8.mongodb.net/movieDB?retryWrites=true&w=majority&appName=Cluster0")
 
-# Get the MongoDB URI from environment variables
-mongodb_uri = os.getenv("MONGODB_URI")
+# Access the specific database
+db = client.get_database("movieDB")
 
-# Create a new MongoDB client and connect to the database
-client = AsyncIOMotorClient(mongodb_uri)
-db = client.get_database()  # This will connect to the specified database in the URI
-
-# Access the 'movies' collection in the database
+# Access the collections within the database
+users_collection = db.get_collection("users")
 movies_collection = db.get_collection("movies")
+comments_collection = db.get_collection("comments")
+ratings_collection = db.get_collection("ratings")
