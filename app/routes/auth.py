@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
 import logging
-from deps import get_db
+from deps import db
 from bson import ObjectId
 
 router = APIRouter()
