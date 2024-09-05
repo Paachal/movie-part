@@ -42,44 +42,44 @@ async def insert_sample_data():
             "title": "Movie 1",
             "description": "Description of movie 1",
             "release_year": 2021,
-            "created_by": "user1",
+            "created_by": None,
             "created_at": datetime(2023, 1, 1)
         },
         {
             "title": "Movie 2",
             "description": "Description of movie 2",
             "release_year": 2022,
-            "created_by": "user2",
+            "created_by": None,
             "created_at": datetime(2023, 1, 2)
         }
     ]
 
     comments = [
         {
-            "movie_id": "movie1",
+            "movie_id": None,
             "text": "Great movie!",
-            "created_by": "user2",
+            "created_by": None,
             "created_at": datetime(2023, 1, 1)
         },
         {
-            "movie_id": "movie2",
+            "movie_id": None,
             "text": "Not bad",
-            "created_by": "user3",
+            "created_by": None,
             "created_at": datetime(2023, 1, 2)
         }
     ]
 
     ratings = [
         {
-            "movie_id": "movie1",
+            "movie_id": None,
             "rating": 5,
-            "created_by": "user3",
+            "created_by": None,
             "created_at": datetime(2023, 1, 1)
         },
         {
-            "movie_id": "movie2",
+            "movie_id": None,
             "rating": 4,
-            "created_by": "user1",
+            "created_by": None,
             "created_at": datetime(2023, 1, 2)
         }
     ]

@@ -7,8 +7,8 @@ from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
 import logging
-from deps import db
 from bson import ObjectId
+from deps import get_users_collection
 
 router = APIRouter()
 
