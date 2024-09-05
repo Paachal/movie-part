@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.deps import get_ratings_collection
+from deps import get_ratings_collection
 from pymongo.collection import Collection
 from bson import ObjectId
 
