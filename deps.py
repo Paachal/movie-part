@@ -6,6 +6,7 @@ from typing import Optional
 from app.core.security import SECRET_KEY, ALGORITHM
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from database import users_collection
+from deps import get_users_collection
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 

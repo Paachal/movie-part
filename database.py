@@ -7,7 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 client = AsyncIOMotorClient("mongodb+srv://paschal:.adgjmptwpaschal@cluster0.dx4v8.mongodb.net/movieDB?retryWrites=true&w=majority&appName=Cluster0")
 
 # Access the specific database
-db = client.get_database("movieDB")
+db = client.movieDB
 
 # Access the collections within the database
 users_collection = db.get_collection("users")
