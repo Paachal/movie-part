@@ -1,12 +1,17 @@
-# app/deps.py
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
-from models import User
+from pydantic import BaseModel
+from typing import Optional
 from app.core.security import SECRET_KEY, ALGORITHM
 from database import db
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+class User(BaseModel):
+    username: str
+    email: Optional[str] = None
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
@@ -32,3 +37,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+# Dependency to get the users collection
+async def get_users_collection(db: AsyncIOMotorDatabase = Depends(db)):
+    return db["users"]
+
+# Dependency to get the movies collection
+async def get_movies_collection(db: AsyncIOMotorDatabase = Depends(db)):
+    return db["movies"]
+
+# Dependency to get the comments collection
+async def get_comments_collection(db: AsyncIOMotorDatabase = Depends(db)):
+    return db["comments"]
+
+# Dependency to get the ratings collection
+async def get_ratings_collection(db: AsyncIOMotorDatabase = Depends(db)):
+    return db["ratings"]
