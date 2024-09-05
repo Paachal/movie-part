@@ -4,8 +4,8 @@ import jwt
 from pydantic import BaseModel
 from typing import Optional
 from app.core.security import SECRET_KEY, ALGORITHM
-from database import db
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from database import get_database
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
@@ -23,6 +23,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
                 detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        db = get_database()
         user = await db["users"].find_one({"username": username})
         if user is None:
             raise HTTPException(
@@ -39,17 +40,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         )
 
 # Dependency to get the users collection
-async def get_users_collection(db: AsyncIOMotorDatabase = Depends(db)):
+def get_users_collection(db: AsyncIOMotorDatabase = Depends(get_database)):
     return db["users"]
 
 # Dependency to get the movies collection
-async def get_movies_collection(db: AsyncIOMotorDatabase = Depends(db)):
+def get_movies_collection(db: AsyncIOMotorDatabase = Depends(get_database)):
     return db["movies"]
 
 # Dependency to get the comments collection
-async def get_comments_collection(db: AsyncIOMotorDatabase = Depends(db)):
+def get_comments_collection(db: AsyncIOMotorDatabase = Depends(get_database)):
     return db["comments"]
 
 # Dependency to get the ratings collection
-async def get_ratings_collection(db: AsyncIOMotorDatabase = Depends(db)):
+def get_ratings_collection(db: AsyncIOMotorDatabase = Depends(get_database)):
     return db["ratings"]

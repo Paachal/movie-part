@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-from pymongo import ReturnDocument
 from pymongo.errors import BulkWriteError
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -91,10 +90,36 @@ async def insert_sample_data():
     await comments_collection.delete_many({})
     await ratings_collection.delete_many({})
 
-    # Insert sample data without _id fields
+    # Insert sample data
     try:
-        await users_collection.insert_many(users)
-        await movies_collection.insert_many(movies)
+        inserted_users = await users_collection.insert_many(users)
+        user_ids = inserted_users.inserted_ids
+
+        # Use inserted user IDs to create movie references
+        user1_id = user_ids[0]
+        user2_id = user_ids[1]
+        user3_id = user_ids[2]
+
+        movies[0]["created_by"] = user1_id
+        movies[1]["created_by"] = user2_id
+
+        inserted_movies = await movies_collection.insert_many(movies)
+        movie_ids = inserted_movies.inserted_ids
+
+        # Use inserted movie IDs to create comment and rating references
+        movie1_id = movie_ids[0]
+        movie2_id = movie_ids[1]
+
+        comments[0]["movie_id"] = movie1_id
+        comments[1]["movie_id"] = movie2_id
+        comments[0]["created_by"] = user2_id
+        comments[1]["created_by"] = user3_id
+
+        ratings[0]["movie_id"] = movie1_id
+        ratings[1]["movie_id"] = movie2_id
+        ratings[0]["created_by"] = user3_id
+        ratings[1]["created_by"] = user1_id
+
         await comments_collection.insert_many(comments)
         await ratings_collection.insert_many(ratings)
     except BulkWriteError as e:
