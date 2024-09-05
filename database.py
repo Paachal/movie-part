@@ -1,7 +1,6 @@
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 
-# MongoDB connection string. Replace <username>, <password>, and <cluster-url> with your actual MongoDB credentials and URL.
-client = MongoClient("mongodb+srv://paschal:.adgjmptwpaschal@cluster0.dx4v8.mongodb.net/movieDB?retryWrites=true&w=majority&appName=Cluster0")
+client = AsyncIOMotorClient("mongodb+srv://paschal:.adgjmptwpaschal@cluster0.dx4v8.mongodb.net/movieDB?retryWrites=true&w=majority&appName=Cluster0")
 
 # Access the specific database
 db = client.get_database("movieDB")

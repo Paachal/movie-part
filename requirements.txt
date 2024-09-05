@@ -2,8 +2,10 @@ fastapi
 uvicorn
 pydantic
 motor
-passlib[bcrypt]
+passlib[bcrypt]==1.7.4
 pyjwt
 pytest
 httpx
 python-jose
+bcrypt==3.2.0
+multipart
