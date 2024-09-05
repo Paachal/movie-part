@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
-from database import db
+from database import users_collection
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from motor.motor_asyncio import AsyncIOMotorClient
-from typing import Optional
 from fastapi.security import OAuth2PasswordRequestForm
+from typing import Optional
+import logging
 
 router = APIRouter()
 
@@ -14,8 +14,6 @@ SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-users_collection = db.get_collection("users")
 
 class User(BaseModel):
     username: str
@@ -48,14 +46,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 async def get_user(username: str) -> Optional[dict]:
     user = await users_collection.find_one({"username": username})
-    if user:
-        return user
-    return None
+    return user
 
 @router.post("/register", response_model=Token)
 async def register(user: User):
+    logging.info(f"Registering user: {user.dict()}")
     db_user = await get_user(user.username)
     if db_user:
+        logging.warning("Username already registered")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered"
@@ -65,15 +63,19 @@ async def register(user: User):
     user_dict["password"] = hashed_password
     await users_collection.insert_one(user_dict)
     access_token = create_access_token(data={"sub": user.username})
+    logging.info("User registered successfully")
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    logging.info(f"User login attempt: {form_data.username}")
     db_user = await get_user(form_data.username)
     if not db_user or not verify_password(form_data.password, db_user["password"]):
+        logging.warning("Invalid username or password")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid username or password"
         )
     access_token = create_access_token(data={"sub": form_data.username})
+    logging.info("User logged in successfully")
     return {"access_token": access_token, "token_type": "bearer"}
