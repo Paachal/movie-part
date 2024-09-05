@@ -8,4 +8,4 @@ pytest
 httpx
 python-jose
 bcrypt==3.2.0
-multipart
+python-multipart
