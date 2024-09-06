@@ -4,9 +4,8 @@ import jwt
 from pydantic import BaseModel
 from typing import Optional
 from app.core.security import SECRET_KEY, ALGORITHM
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from database import get_database
-
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
