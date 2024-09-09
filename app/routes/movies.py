@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List
 from motor.motor_asyncio import AsyncIOMotorCollection
 from deps import get_movies_collection
+from database import movies_collection
 
 router = APIRouter()
 

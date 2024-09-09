@@ -9,6 +9,7 @@ import logging
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorCollection
 from deps import get_users_collection
+from database import users_collection
 
 router = APIRouter()
 
