@@ -9,6 +9,13 @@ from database import db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
+MONGODB_URL = "mongodb+srv://paschal:.adgjmptwpaschal@cluster0.dx4v8.mongodb.net/movieDB?retryWrites=true&w=majority&appName=Cluster0"
+client = AsyncIOMotorClient(MONGODB_URL)
+db = client.movieDB
+
+def get_database() -> AsyncIOMotorDatabase:
+    return db
+
 class User(BaseModel):
     username: str
     email: Optional[str] = None
