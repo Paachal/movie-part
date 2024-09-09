@@ -13,8 +13,8 @@ from database import users_collection
 
 router = APIRouter()
 
-SECRET_KEY = a2e651dc4653b28184cb8770efbd4e68901d13dcd35a691a85e51a9d3fe5ccae
-ALGORITHM = HS256
+SECRET_KEY = "a2e651dc4653b28184cb8770efbd4e68901d13dcd35a691a85e51a9d3fe5ccae"
+ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
