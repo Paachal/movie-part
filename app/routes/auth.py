@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
-from database import users_collection
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
@@ -8,6 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
 import logging
 from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorCollection
 from deps import get_users_collection
 
 router = APIRouter()
@@ -46,14 +46,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_user(username: str) -> Optional[dict]:
+async def get_user(users_collection: AsyncIOMotorCollection, username: str) -> Optional[dict]:
     user = await users_collection.find_one({"username": username})
     return user
 
 @router.post("/register", response_model=Token)
-async def register(user: User):
+async def register(user: User, users_collection: AsyncIOMotorCollection = Depends(get_users_collection)):
     logging.info(f"Registering user: {user.dict()}")
-    db_user = await get_user(user.username)
+    db_user = await get_user(users_collection, user.username)
     if db_user:
         logging.warning("Username already registered")
         raise HTTPException(
@@ -69,9 +69,9 @@ async def register(user: User):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), users_collection: AsyncIOMotorCollection = Depends(get_users_collection)):
     logging.info(f"User login attempt: {form_data.username}")
-    db_user = await get_user(form_data.username)
+    db_user = await get_user(users_collection, form_data.username)
     if not db_user or not verify_password(form_data.password, db_user["password"]):
         logging.warning("Invalid username or password")
         raise HTTPException(
