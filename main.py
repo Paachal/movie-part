@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from app.routes import auth, movies, ratings, comments
 
